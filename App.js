@@ -7,22 +7,30 @@ import {
   Button,
   ScrollView,
 } from "react-native";
-import { Calendar } from "react-native-calendars"; // Nowy import kalendarza
-import TimePicker from "./TimePicker"; // Komponent do wyboru godziny
-import DatePicker from "./DatePicker"; // Komponent do wyboru daty
+import { Calendar } from "react-native-calendars"; // Kalendarz
+import { DatePickerModal, TimePickerModal } from "react-native-paper-dates"; // Komponenty daty i czasu
 
 export default function App() {
   const [selectedDate, setSelectedDate] = useState("2024-09-27"); // Stan dla wybranej daty
-  const [selectedTime, setSelectedTime] = useState("12:45"); // Stan dla wybranej godziny
+  const [selectedTime, setSelectedTime] = useState(null); // Stan dla wybranej godziny
   const [note, setNote] = useState(""); // Stan dla bieżącej notatki
   const [savedNotes, setSavedNotes] = useState([]); // Stan dla zapisanych notatek
+  const [visibleDate, setVisibleDate] = useState(false); // Stan dla widoczności modalnego selektora daty
+  const [visibleTime, setVisibleTime] = useState(false); // Stan dla widoczności modalnego selektora czasu
 
   const handleDateChange = (day) => {
     setSelectedDate(day.dateString); // Ustawienie wybranej daty
   };
 
-  const handleTimeChange = (time) => {
-    setSelectedTime(time); // Ustawienie wybranej godziny
+  const handleDateConfirm = (date) => {
+    setSelectedDate(date); // Ustawienie wybranej daty
+    setVisibleDate(false); // Zamknięcie modalnego selektora daty
+  };
+
+  const handleTimeConfirm = ({ hours, minutes }) => {
+    const formattedTime = `${hours}:${minutes < 10 ? "0" : ""}${minutes}`; // Formatowanie godziny
+    setSelectedTime(formattedTime); // Ustawienie wybranej godziny
+    setVisibleTime(false); // Zamknięcie modalnego selektora czasu
   };
 
   const handleSaveNote = () => {
@@ -47,10 +55,24 @@ export default function App() {
             [selectedDate]: { selected: true },
           }}
         />
-        <TimePicker
-          onTimeChange={handleTimeChange}
-          selectedTime={selectedTime}
+
+        {/* Przycisk do wyboru godziny */}
+        <Button title="Wybierz godzinę" onPress={() => setVisibleTime(true)} />
+
+        <TimePickerModal
+          visible={visibleTime}
+          onDismiss={() => setVisibleTime(false)}
+          onConfirm={handleTimeConfirm}
+          label="Wybierz godzinę"
+          hours={
+            selectedTime ? parseInt(selectedTime.split(":")[0]) : undefined
+          }
+          minutes={
+            selectedTime ? parseInt(selectedTime.split(":")[1]) : undefined
+          }
+          visible={visibleTime}
         />
+
         <TextInput
           style={styles.note}
           placeholder="Wpisz coś..."
@@ -58,7 +80,9 @@ export default function App() {
           onChangeText={(text) => setNote(text)} // Aktualizuje stan notatki
         />
       </View>
+
       <Button title="Zapisz notatkę" onPress={handleSaveNote} />
+
       <ScrollView style={styles.savedNotesContainer}>
         {savedNotes.map((savedNote, index) => (
           <Text key={index} style={styles.savedNote}>
