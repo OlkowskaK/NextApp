@@ -1,18 +1,36 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  Button,
+  ScrollView,
+} from "react-native";
+import { Calendar } from "react-native-calendars"; // Nowy import kalendarza
 import TimePicker from "./TimePicker"; // Komponent do wyboru godziny
 import DatePicker from "./DatePicker"; // Komponent do wyboru daty
 
 export default function App() {
   const [selectedDate, setSelectedDate] = useState("2024-09-27"); // Stan dla wybranej daty
   const [selectedTime, setSelectedTime] = useState("12:45"); // Stan dla wybranej godziny
+  const [note, setNote] = useState(""); // Stan dla bieżącej notatki
+  const [savedNotes, setSavedNotes] = useState([]); // Stan dla zapisanych notatek
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date); // Ustawienie wybranej daty
+  const handleDateChange = (day) => {
+    setSelectedDate(day.dateString); // Ustawienie wybranej daty
   };
 
   const handleTimeChange = (time) => {
     setSelectedTime(time); // Ustawienie wybranej godziny
+  };
+
+  const handleSaveNote = () => {
+    if (note.trim()) {
+      const newNote = `${selectedDate} ${selectedTime}: ${note}`;
+      setSavedNotes([...savedNotes, newNote]); // Zapisuje notatkę
+      setNote(""); // Czyści pole tekstowe po zapisaniu notatki
+    }
   };
 
   return (
@@ -22,18 +40,32 @@ export default function App() {
       </View>
 
       <View style={styles.row}>
-        <DatePicker
-          onDateChange={handleDateChange}
-          selectedDate={selectedDate}
+        {/* Komponent kalendarza */}
+        <Calendar
+          onDayPress={handleDateChange} // Obsługa wyboru daty
+          markedDates={{
+            [selectedDate]: { selected: true },
+          }}
         />
         <TimePicker
           onTimeChange={handleTimeChange}
           selectedTime={selectedTime}
         />
-        <TextInput style={styles.note} placeholder="Wpisz coś..." />
+        <TextInput
+          style={styles.note}
+          placeholder="Wpisz coś..."
+          value={note} // Wiąże wartość z polem tekstowym
+          onChangeText={(text) => setNote(text)} // Aktualizuje stan notatki
+        />
       </View>
-
-      <View style={styles.row}></View>
+      <Button title="Zapisz notatkę" onPress={handleSaveNote} />
+      <ScrollView style={styles.savedNotesContainer}>
+        {savedNotes.map((savedNote, index) => (
+          <Text key={index} style={styles.savedNote}>
+            {savedNote}
+          </Text>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -67,19 +99,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  date: {
-    fontSize: 16,
-    fontWeight: "bold",
-    flex: 1,
-  },
-  time: {
-    fontSize: 16,
-    flex: 1,
-    textAlign: "center",
-  },
   note: {
     fontSize: 16,
     flex: 2,
     textAlign: "right",
+  },
+  savedNotesContainer: {
+    marginTop: 20,
+  },
+  savedNote: {
+    fontSize: 16,
+    padding: 5,
+    backgroundColor: "#fff",
+    marginBottom: 5,
+    borderRadius: 3,
   },
 });
