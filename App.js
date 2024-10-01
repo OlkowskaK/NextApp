@@ -15,7 +15,7 @@ export default function App() {
   const [selectedTime, setSelectedTime] = useState(null); // Stan dla wybranej godziny
   const [note, setNote] = useState(""); // Stan dla bieżącej notatki
   const [savedNotes, setSavedNotes] = useState([]); // Stan dla zapisanych notatek
-  const [visibleDate, setVisibleDate] = useState(false); // Stan dla widoczności modalnego selektora daty
+  const [visibleCalendar, setVisibleCalendar] = useState(false);
   const [visibleTime, setVisibleTime] = useState(false); // Stan dla widoczności modalnego selektora czasu
 
   const handleDateChange = (day) => {
@@ -48,13 +48,21 @@ export default function App() {
       </View>
 
       <View style={styles.row}>
-        {/* Komponent kalendarza */}
-        <Calendar
-          onDayPress={handleDateChange} // Obsługa wyboru daty
-          markedDates={{
-            [selectedDate]: { selected: true },
-          }}
-        />
+        {/* Przycisk do wyboru daty */}
+        <Button title="Wybierz datę" onPress={() => setVisibleCalendar(true)} />
+
+        {/* Wyświetlenie kalendarza, gdy jest widoczny */}
+        {visibleCalendar && (
+          <View>
+            <Calendar
+              onDayPress={handleDateChange}
+              markedDates={{
+                [selectedDate]: { selected: true },
+              }}
+            />
+            <Button title="Ok" onPress={() => setVisibleCalendar(false)} />
+          </View>
+        )}
 
         {/* Przycisk do wyboru godziny */}
         <Button title="Wybierz godzinę" onPress={() => setVisibleTime(true)} />
@@ -70,7 +78,6 @@ export default function App() {
           minutes={
             selectedTime ? parseInt(selectedTime.split(":")[1]) : undefined
           }
-          visible={visibleTime}
         />
 
         <TextInput
@@ -98,19 +105,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#C3FFFE",
-    padding: 20,
+    padding: "5%",
+    width: "100%",
+    height: "100%",
+    minWidth: 300,
+    minHeight: 500,
   },
   nameApp: {
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
+    marginTop: 20,
   },
   name: {
     fontSize: 40,
     fontWeight: "bold",
   },
   row: {
-    flexDirection: "row",
+    flexDirection: "column",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 10,
@@ -126,7 +138,9 @@ const styles = StyleSheet.create({
   note: {
     fontSize: 16,
     flex: 2,
-    textAlign: "right",
+    textAlign: "left",
+    minHeight: 100,
+    minWidth: 100,
   },
   savedNotesContainer: {
     marginTop: 20,
