@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Dodano useEffect
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { TimePickerModal } from "react-native-paper-dates";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Dodano AsyncStorage
 
 const { width } = Dimensions.get("window");
 
@@ -32,6 +33,17 @@ export default function App() {
   const [visibleTime, setVisibleTime] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
 
+  // Wczytaj notatki z AsyncStorage
+  useEffect(() => {
+    const loadNotes = async () => {
+      const savedNotes = await AsyncStorage.getItem("notes");
+      if (savedNotes) {
+        setSavedNotes(JSON.parse(savedNotes));
+      }
+    };
+    loadNotes();
+  }, []);
+
   const handleDateChange = (day) => {
     setSelectedDate(day.dateString);
   };
@@ -42,7 +54,8 @@ export default function App() {
     setVisibleTime(false);
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
+    // Dodano async
     if (note.trim()) {
       const newNote = {
         id: Date.now(),
@@ -50,21 +63,23 @@ export default function App() {
         date: new Date(`${selectedDate}T${selectedTime}`),
       };
 
+      let updatedNotes;
+
       if (editingIndex !== null) {
-        const updatedNotes = savedNotes.map((n, index) =>
+        updatedNotes = savedNotes.map((n, index) =>
           index === editingIndex ? newNote : n,
         );
-        setSavedNotes(updatedNotes);
         setEditingIndex(null);
       } else {
-        setSavedNotes([...savedNotes, newNote]);
+        updatedNotes = [...savedNotes, newNote];
       }
 
       // Sortuj notatki po dacie
-      const sortedNotes = [...savedNotes, newNote].sort(
-        (a, b) => a.date - b.date,
-      );
-      setSavedNotes(sortedNotes);
+      updatedNotes.sort((a, b) => a.date - b.date);
+      setSavedNotes(updatedNotes);
+
+      // Zapisz notatki do AsyncStorage
+      await AsyncStorage.setItem("notes", JSON.stringify(updatedNotes));
 
       setNote("");
     }
@@ -75,9 +90,12 @@ export default function App() {
     setEditingIndex(index);
   };
 
-  const handleDeleteNote = (index) => {
+  const handleDeleteNote = async (index) => {
+    // Dodano async
     const updatedNotes = savedNotes.filter((_, i) => i !== index);
     setSavedNotes(updatedNotes);
+    // Zapisz zmiany w AsyncStorage
+    await AsyncStorage.setItem("notes", JSON.stringify(updatedNotes));
   };
 
   return (
