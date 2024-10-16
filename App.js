@@ -8,37 +8,76 @@ import {
   ScrollView,
   Dimensions,
   Modal,
-  TouchableOpacity, // Import TouchableOpacity
+  TouchableOpacity,
 } from "react-native";
-import { Calendar } from "react-native-calendars"; // Kalendarz
-import { TimePickerModal } from "react-native-paper-dates"; // Komponenty daty i czasu
+import { Calendar } from "react-native-calendars";
+import { TimePickerModal } from "react-native-paper-dates";
 
-const { width } = Dimensions.get("window"); // Pobranie wymiarów ekranu
+const { width } = Dimensions.get("window");
+
+const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, "0");
+  const day = today.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export default function App() {
-  const [selectedDate, setSelectedDate] = useState("2024-09-27"); // Stan dla wybranej daty
-  const [selectedTime, setSelectedTime] = useState("12:00"); // Ustawienie domyślnej godziny
-  const [note, setNote] = useState(""); // Stan dla bieżącej notatki
-  const [savedNotes, setSavedNotes] = useState([]); // Stan dla zapisanych notatek
+  const [selectedDate, setSelectedDate] = useState(getTodayDate());
+  const [selectedTime, setSelectedTime] = useState("12:00");
+  const [note, setNote] = useState("");
+  const [savedNotes, setSavedNotes] = useState([]);
   const [visibleCalendar, setVisibleCalendar] = useState(false);
-  const [visibleTime, setVisibleTime] = useState(false); // Stan dla widoczności modalnego selektora czasu
+  const [visibleTime, setVisibleTime] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
 
   const handleDateChange = (day) => {
-    setSelectedDate(day.dateString); // Ustawienie wybranej daty
+    setSelectedDate(day.dateString);
   };
 
   const handleTimeConfirm = ({ hours, minutes }) => {
-    const formattedTime = `${hours}:${minutes < 10 ? "0" : ""}${minutes}`; // Formatowanie godziny
-    setSelectedTime(formattedTime); // Ustawienie wybranej godziny
-    setVisibleTime(false); // Zamknięcie modalnego selektora czasu
+    const formattedTime = `${hours}:${minutes < 10 ? "0" : ""}${minutes}`;
+    setSelectedTime(formattedTime);
+    setVisibleTime(false);
   };
 
   const handleSaveNote = () => {
     if (note.trim()) {
-      const newNote = `${selectedDate} ${selectedTime}: ${note}`;
-      setSavedNotes([...savedNotes, newNote]); // Zapisuje notatkę
-      setNote(""); // Czyści pole tekstowe po zapisaniu notatki
+      const newNote = {
+        id: Date.now(),
+        text: `${selectedDate} ${selectedTime}: ${note}`,
+        date: new Date(`${selectedDate}T${selectedTime}`),
+      };
+
+      if (editingIndex !== null) {
+        const updatedNotes = savedNotes.map((n, index) =>
+          index === editingIndex ? newNote : n,
+        );
+        setSavedNotes(updatedNotes);
+        setEditingIndex(null);
+      } else {
+        setSavedNotes([...savedNotes, newNote]);
+      }
+
+      // Sortuj notatki po dacie
+      const sortedNotes = [...savedNotes, newNote].sort(
+        (a, b) => a.date - b.date,
+      );
+      setSavedNotes(sortedNotes);
+
+      setNote("");
     }
+  };
+
+  const handleEditNote = (index) => {
+    setNote(savedNotes[index].text.split(": ")[1]);
+    setEditingIndex(index);
+  };
+
+  const handleDeleteNote = (index) => {
+    const updatedNotes = savedNotes.filter((_, i) => i !== index);
+    setSavedNotes(updatedNotes);
   };
 
   return (
@@ -49,7 +88,6 @@ export default function App() {
 
       <View style={styles.row}>
         <View style={styles.buttonContainer}>
-          {/* Przycisk do wyboru daty */}
           <View style={styles.buttonSpacing}>
             <Button
               title={selectedDate}
@@ -57,43 +95,37 @@ export default function App() {
             />
           </View>
 
-          {/* Przycisk do wyboru godziny */}
           <View style={styles.buttonSpacing}>
-            <Button
-              title={selectedTime} // Użycie wybranej godziny
-              onPress={() => setVisibleTime(true)}
-            />
+            <Button title={selectedTime} onPress={() => setVisibleTime(true)} />
           </View>
         </View>
 
-        {/* Wyświetlenie kalendarza w modalu */}
         <Modal
           animationType="slide"
           transparent={true}
           visible={visibleCalendar}
-          onRequestClose={() => setVisibleCalendar(false)} // Zamykanie modalu
+          onRequestClose={() => setVisibleCalendar(false)}
         >
           <View style={styles.modalBackground}>
             <View style={styles.modalContainer}>
-              {/* Napis nad kalendarzem */}
               <Text style={styles.dateLabel}>Wybierz datę</Text>
 
               <Calendar
                 onDayPress={handleDateChange}
                 markedDates={{
-                  [selectedDate]: { selected: true, selectedColor: "#6750a4" }, // Zaznaczona data
+                  [selectedDate]: { selected: true, selectedColor: "#6750a4" },
                 }}
                 theme={{
-                  backgroundColor: "#e7e0ec", // Tło kalendarza
-                  calendarBackground: "#e7e0ec", // Tło kalendarza
-                  textSectionTitleColor: "#000", // Kolor tytułu sekcji
-                  selectedDayBackgroundColor: "#6750a4", // Tło dla wybranego dnia
-                  selectedDayTextColor: "#fff", // Kolor tekstu dla wybranego dnia
-                  todayTextColor: "#6750a4", // Kolor dla dzisiejszej daty
-                  dayTextColor: "#000", // Kolor tekstu dla dni
-                  textDisabledColor: "#f00", // Kolor tekstu dla nieaktywnych dni
-                  monthTextColor: "#000", // Kolor tekstu miesiąca
-                  indicatorColor: "#6750a4", // Kolor wskaźnika
+                  backgroundColor: "#e7e0ec",
+                  calendarBackground: "#e7e0ec",
+                  textSectionTitleColor: "#000",
+                  selectedDayBackgroundColor: "#6750a4",
+                  selectedDayTextColor: "#fff",
+                  todayTextColor: "#6750a4",
+                  dayTextColor: "#000",
+                  textDisabledColor: "#f00",
+                  monthTextColor: "#000",
+                  indicatorColor: "#6750a4",
                 }}
               />
               <View style={styles.calendarButtons}>
@@ -129,21 +161,35 @@ export default function App() {
 
         <TextInput
           style={styles.note}
-          placeholder="Wpisz coś..."
-          value={note} // Wiąże wartość z polem tekstowym
-          onChangeText={(text) => setNote(text)} // Aktualizuje stan notatki
+          placeholder="Tu wpisz swoją notatkę..."
+          value={note}
+          onChangeText={(text) => setNote(text)}
         />
       </View>
 
       <Button title="Zapisz notatkę" onPress={handleSaveNote} />
       <View>
-        <Text style={styles.tekstnote}>Moje notatki</Text>
+        <Text style={styles.tekstnote}>Moje notatki:</Text>
       </View>
       <ScrollView style={styles.savedNotesContainer}>
         {savedNotes.map((savedNote, index) => (
-          <Text key={index} style={styles.savedNote}>
-            {savedNote}
-          </Text>
+          <View key={savedNote.id} style={styles.noteContainer}>
+            <Text style={styles.savedNote}>{savedNote.text}</Text>
+            <View style={styles.noteButtons}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => handleEditNote(index)}
+              >
+                <Text style={styles.buttonText}>Edytuj</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteNote(index)}
+              >
+                <Text style={styles.buttonText}>Usuń</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         ))}
       </ScrollView>
     </View>
@@ -154,9 +200,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#C3FFFE",
-    padding: width > 400 ? 20 : 10, // Zwiększony padding dla większych ekranów
-    width: "100%",
-    height: "100%",
+    padding: width > 400 ? 20 : 10,
+    flexDirection: "column",
   },
   nameApp: {
     justifyContent: "center",
@@ -165,7 +210,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   name: {
-    fontSize: width > 400 ? 40 : 30, // Dynamiczny rozmiar czcionki w zależności od szerokości ekranu
+    fontSize: width > 400 ? 40 : 30,
     fontWeight: "bold",
   },
   row: {
@@ -174,48 +219,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
     marginBottom: 10,
-    backgroundColor: "#1BC1C1",
+    backgroundColor: "#A7E2E1",
     borderRadius: 5,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.9,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "100%",
   },
   buttonContainer: {
-    flex: 1,
     flexDirection: "row",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
+    alignItems: "center",
     width: "100%",
-    marginBottom: 10,
   },
   buttonSpacing: {
-    marginRight: 10,
+    marginHorizontal: 5,
+    width: "40%",
   },
   modalBackground: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Przezroczyste tło
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContainer: {
-    width: "90%",
+    margin: 20,
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.9,
-    shadowRadius: 3,
-    elevation: 2,
   },
   dateLabel: {
-    fontFamily: "Roboto",
-    letterSpacing: 0.5,
-    fontWeight: "500",
-    lineHeight: 16,
-    fontSize: 12,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
     color: "#49454F",
     alignSelf: "flex-start",
     marginBottom: 10,
@@ -241,20 +281,47 @@ const styles = StyleSheet.create({
     height: 40,
     borderColor: "gray",
     borderWidth: 1,
+    marginTop: 10,
     marginBottom: 10,
     width: "100%",
     paddingHorizontal: 10,
   },
   tekstnote: {
+    marginTop: 20,
+    marginBottom: 20,
     fontWeight: "bold",
     fontSize: 18,
   },
   savedNotesContainer: {
     marginTop: 10,
-    width: "100%",
+    flexGrow: 1,
+    backgroundColor: "#A7E2E1",
   },
   savedNote: {
     fontSize: 16,
     marginVertical: 5,
+  },
+  noteContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 5,
+    padding: 10,
+    borderBottomColor: "#ccc",
+    borderBottomWidth: 1,
+  },
+  noteButtons: {
+    flexDirection: "row",
+  },
+  editButton: {
+    padding: 5,
+    backgroundColor: "#2196f3",
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  deleteButton: {
+    backgroundColor: "#ff0000",
+    padding: 5,
+    borderRadius: 5,
   },
 });
