@@ -1,3 +1,5 @@
+//Na ExpoGo otwierać za pomocą "npx expo start --tunnel"
+
 import React, { useState, useEffect } from "react"; // Dodano useEffect
 import {
   StyleSheet,
